@@ -49,11 +49,11 @@ Database: MySQL (`airbnb_project`), all raw tables stored as text exactly as rec
   - `ST.INT.ARVL` International tourism, number of arrivals
   - `FP.CPI.TOTL.ZG` Inflation, consumer prices (annual %)
 - **Period requested:** 2018 to 2025
-- **Notes:** country-level data (not city-level). Latest years are often missing (NaN) because of publication delay. International tourism arrivals is missing for most countries/years (e.g. Spain, USA after 2020); kept in the raw table and Phase 3 decides whether to drop it.
+- **Notes:** country-level data (not city-level). Latest years are often missing (NaN) because of publication delay. International tourism arrivals is missing for most countries/years (e.g. Spain, USA after 2020);International tourism arrivals was dropped in cleaning (62% missing); see cleaning_log.md.
 
 ### 2.4 Wikipedia Geosearch API
 - **URL:** https://en.wikipedia.org/w/api.php (`action=query&list=geosearch`)
-- **Method:** 10 km radius around each city center, nearest 500 pages per city.
+- - **Method:** 9 search points per city (center + 8 points 5 km away), 10 km radius each, duplicates removed, only pages within 10 km of the center kept.
 - **Filtering:** removed pages matching an exclusion keyword list (stations, streets, events, institutions, districts) and the city page itself.
 - **Result:** Amsterdam 421, Barcelona 380, Berlin 428, Columbus 411.
 - **Columns:** city, name, latitude, longitude, distance_from_center_m, source_url
@@ -74,3 +74,4 @@ Database: MySQL (`airbnb_project`), all raw tables stored as text exactly as rec
 5. Run `SQL/04_indexes.sql` (once, after loading).
 6. Run `SQL/03_checks.sql` and compare the results with the table in 2.1.
 7. Run `notebooks/06_collect_weather.ipynb`, `07_collect_worldbank.ipynb`, `08_collect_landmarks.ipynb`.
+8. Run notebooks `09` to `13` (cleaning), then `14_merge_final.ipynb` to build `listings_final` and `city_daily_final`.

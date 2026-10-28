@@ -84,12 +84,15 @@ Principle: clean each source separately first, then aggregate cities, then merge
 - Input: `raw_landmarks`, 1,640 rows.
 - Coordinates and distance -> numeric; names trimmed.
 - Removed: rows without name or coordinates 0; duplicates (city, name) 0; distance outside 0-10,000 m 0.
-- Extra exclusion by name: pages containing "hotel", "company", "manufacturing", "government" -> 51 rows removed. ("church" and "buurt" were checked but kept.)
-- Output: `landmarks_clean.csv/.parquet`, 1,589 rows.
+- Collection was redone (notebook `08`): the first version took only the 500 nearest Wikipedia pages to the city center. In Berlin they all fell within 2.5 km of the center, so listings farther out looked far from any landmark (median distance to the nearest landmark 1.87 km, 0 landmarks within 1 km). New method: 9 search points (center + 8 points 5 km away), 10 km radius each, duplicates removed, only landmarks within 10 km of the center kept.
+- Input: `raw_landmarks`, ?? rows.
+- Extra exclusion by name: pages containing "hotel", "company", "manufacturing", "government" -> ?? rows removed.
+- Output: `landmarks_clean.csv/.parquet`, 2443 rows.
 
-## 6. Next steps (not done yet)
+## 6. Next steps ## 7. Notes for ML
+- Do not use `estimated_revenue_l365d` or other price-derived columns (`price_missing`, `price_outlier`) as features when predicting price: they leak the target.
+- Weather and economy columns are city-level, so they separate cities and days, not listings in the same city.
+- Price is missing for 29% of listings (not imputed): training uses listings with a price only.
 
-1. Combine the 4 cities (already one table per source with a `city` column).
-2. Merge: listings + calendar summary on (city, listing_id); weather on (city, calendar_date); economy on (city, year = 2025); landmarks as distance to the nearest landmark and number of landmarks within 1 km and 2 km (Haversine).
-3. Save the final merged dataset as Parquet.
-4. Decide how EDA treats listings with missing price (analyze only rows with price) and flagged outliers (report with and without).
+## 8. Next step
+EDA (Phase 4) on `listings_final` and `city_daily_final`.
