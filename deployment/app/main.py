@@ -1,12 +1,17 @@
+from typing import Literal
+
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="TravelPulse API")
 
+City = Literal["Barcelona", "Berlin", "Amsterdam", "Columbus"]
+RoomType = Literal["Entire home/apt", "Private room", "Shared room", "Hotel room"]
+
 
 class ListingInput(BaseModel):
-    city: str
-    room_type: str
+    city: City
+    room_type: RoomType
     property_type: str
     accommodates: int = Field(ge=1, le=16)
     bedrooms: float = Field(ge=0, le=10)
