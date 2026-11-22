@@ -75,3 +75,4 @@ Database: MySQL (`airbnb_project`), all raw tables stored as text exactly as rec
 6. Run `SQL/03_checks.sql` and compare the results with the table in 2.1.
 7. Run `notebooks/06_collect_weather.ipynb`, `07_collect_worldbank.ipynb`, `08_collect_landmarks.ipynb`.
 8. Run notebooks `09` to `13` (cleaning), then `14_merge_final.ipynb` to build `listings_final` and `city_daily_final`.
+9. Run `notebooks/15_split.ipynb`, then `15_eda.ipynb` (train/test split and EDA).
