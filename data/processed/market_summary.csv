@@ -1,0 +1,139 @@
+city,neighbourhood_cleansed,n_listings,median_actual_price,median_predicted_price,median_occupancy_days,median_annual_revenue,share_underpriced
+Amsterdam,De Baarsjes - Oud-West,965,319.0,317.99,30.0,9403.0,0.118
+Amsterdam,Centrum-West,853,290.91,279.86,101.0,30546.0,0.098
+Amsterdam,Centrum-Oost,672,274.0,269.62,55.0,15424.0,0.14
+Amsterdam,De Pijp - Rivierenbuurt,644,333.75,319.42,24.0,9646.0,0.113
+Amsterdam,Zuid,424,316.88,308.33,24.0,9721.0,0.139
+Amsterdam,Westerpark,376,287.8,301.35,31.0,10390.0,0.149
+Amsterdam,Oud-Oost,353,270.0,272.5,31.0,8862.0,0.153
+Amsterdam,Oud-Noord,268,259.1,261.31,31.0,9326.0,0.131
+Amsterdam,Bos en Lommer,255,260.0,263.69,23.0,6741.0,0.071
+Amsterdam,Oostelijk Havengebied - Indische Buurt,216,252.25,250.11,23.0,6545.0,0.162
+Amsterdam,Noord-West,173,261.0,290.49,23.0,6478.0,0.191
+Amsterdam,Watergraafsmeer,161,247.33,258.32,31.0,9791.0,0.18
+Amsterdam,Noord-Oost,115,274.25,300.08,30.0,7301.0,0.139
+Amsterdam,IJburg - Zeeburgereiland,104,279.0,271.15,26.0,8657.0,0.087
+Amsterdam,Slotervaart,102,243.83,245.18,35.0,9371.0,0.147
+Amsterdam,Geuzenveld - Slotermeer,96,225.0,229.62,31.5,7320.0,0.125
+Amsterdam,Buitenveldert - Zuidas,80,237.32,250.87,23.0,6096.0,0.125
+Amsterdam,Bijlmer-Centrum,42,134.0,137.18,131.5,17243.0,0.119
+Amsterdam,De Aker - Nieuw Sloten,41,185.0,188.38,31.0,5451.0,0.098
+Amsterdam,Osdorp,41,161.67,181.32,70.0,13508.0,0.146
+Amsterdam,Gaasperdam - Driemond,34,131.5,138.46,47.0,9115.0,0.118
+Barcelona,la Dreta de l'Eixample,1912,252.5,255.08,96.0,18692.0,0.113
+Barcelona,el Raval,837,105.95,108.39,62.0,5668.0,0.184
+Barcelona,la Vila de Gràcia,798,199.58,217.51,126.0,17988.0,0.139
+Barcelona,la Sagrada Família,791,233.5,247.68,150.0,29698.0,0.155
+Barcelona,l'Antiga Esquerra de l'Eixample,744,212.12,231.54,93.0,16396.0,0.134
+Barcelona,el Barri Gòtic,738,136.56,135.5,54.0,5816.0,0.138
+Barcelona,"Sant Pere, Santa Caterina i la Ribera",721,158.97,161.12,62.0,6098.0,0.135
+Barcelona,Sant Antoni,699,224.0,245.27,102.0,20904.0,0.142
+Barcelona,el Poble Sec,594,206.0,216.89,128.0,22816.0,0.133
+Barcelona,la Nova Esquerra de l'Eixample,528,213.68,218.39,72.0,11059.0,0.159
+Barcelona,Sant Gervasi - Galvany,424,127.52,134.19,0.0,0.0,0.146
+Barcelona,el Fort Pienc,362,237.17,252.11,108.0,18210.0,0.171
+Barcelona,el Poblenou,359,202.43,221.81,124.0,21615.0,0.128
+Barcelona,la Barceloneta,288,86.4,87.04,84.0,7376.0,0.146
+Barcelona,Sants,225,178.0,190.81,96.0,12744.0,0.129
+Barcelona,el Camp de l'Arpa del Clot,220,201.0,213.52,168.0,33763.0,0.177
+Barcelona,el Camp d'en Grassot i Gràcia Nova,191,206.0,228.47,150.0,30054.0,0.199
+Barcelona,les Corts,177,190.53,198.06,62.0,8849.0,0.136
+Barcelona,el Putxet i el Farró,154,171.74,177.11,64.0,10884.0,0.143
+Barcelona,el Parc i la Llacuna del Poblenou,139,211.5,231.92,126.0,23716.0,0.216
+Barcelona,Hostafrancs,131,206.0,207.17,144.0,28386.0,0.16
+Barcelona,la Vila Olímpica del Poblenou,123,268.96,277.43,120.0,20335.0,0.073
+Barcelona,Sants - Badal,111,103.78,108.31,62.0,5723.0,0.171
+Barcelona,Diagonal Mar i el Front Marítim del Poblenou,106,268.88,275.03,99.0,30418.0,0.085
+Barcelona,Sant Gervasi - la Bonanova,71,127.14,131.0,48.0,4487.0,0.113
+Barcelona,el Guinardó,64,166.17,170.45,122.0,11699.0,0.219
+Barcelona,la Salut,64,127.54,139.85,62.0,5164.0,0.156
+Barcelona,Provençals del Poblenou,63,146.51,139.84,90.0,9420.0,0.127
+Barcelona,la Bordeta,59,165.47,153.66,48.0,5841.0,0.237
+Barcelona,Sant Andreu,56,68.16,73.72,0.0,0.0,0.161
+Barcelona,la Maternitat i Sant Ramon,56,168.0,167.72,120.0,26869.0,0.089
+Barcelona,el Baix Guinardó,55,189.8,198.22,124.0,15715.0,0.2
+Barcelona,Sarrià,54,127.6,147.09,9.0,1746.0,0.185
+Barcelona,la Font de la Guatlla,54,190.67,191.91,126.0,25423.0,0.222
+Barcelona,el Clot,53,93.0,96.65,124.0,7193.0,0.094
+Barcelona,el Besòs i el Maresme,52,152.0,144.39,61.0,7388.0,0.115
+Barcelona,Vallcarca i els Penitents,51,116.67,142.68,128.0,15462.0,0.216
+Barcelona,les Tres Torres,47,178.0,177.56,124.0,20854.0,0.085
+Barcelona,el Carmel,45,85.55,90.32,42.0,5382.0,0.311
+Barcelona,Navas,40,107.11,121.35,137.0,10270.0,0.075
+Barcelona,la Marina de Port,35,74.64,86.03,6.0,1123.0,0.314
+Barcelona,Sant Martí de Provençals,31,60.0,55.63,102.0,3999.0,0.323
+Berlin,Alexanderplatz,672,144.62,153.13,164.0,20271.0,0.167
+Berlin,Frankfurter Allee Süd FK,401,136.0,142.8,101.0,14522.0,0.14
+Berlin,Brunnenstr. Süd,338,191.5,183.64,76.0,13124.0,0.109
+Berlin,Tempelhofer Vorstadt,333,130.0,134.18,184.0,22321.0,0.15
+Berlin,Prenzlauer Berg Südwest,247,175.5,177.38,184.0,25564.0,0.162
+Berlin,Schöneberg-Nord,189,96.68,101.83,112.0,13924.0,0.164
+Berlin,Südliche Friedrichstadt,188,138.5,147.58,132.5,19715.0,0.186
+Berlin,Brunnenstr. Nord,184,180.75,162.1,25.0,3590.0,0.141
+Berlin,Prenzlauer Berg Süd,177,146.18,152.1,151.0,18818.0,0.096
+Berlin,Prenzlauer Berg Nordwest,169,140.0,137.55,126.0,14716.0,0.154
+Berlin,südliche Luisenstadt,167,135.0,137.96,176.0,20020.0,0.108
+Berlin,Karl-Marx-Allee-Süd,160,130.0,127.25,139.0,14340.0,0.194
+Berlin,Moabit Ost,155,130.0,118.29,189.0,21235.0,0.155
+Berlin,Neuköllner Mitte/Zentrum,154,112.0,122.16,88.0,10830.0,0.188
+Berlin,Reuterstraße,153,114.5,114.09,88.0,11524.0,0.163
+Berlin,Moabit West,146,125.0,123.61,119.5,13574.0,0.158
+Berlin,Otto-Suhr-Allee,141,103.0,116.05,76.0,9711.0,0.199
+Berlin,Düsseldorfer Straße,139,131.78,126.73,113.0,17676.0,0.137
+Berlin,Kurfürstendamm,139,130.0,131.2,60.0,6715.0,0.115
+Berlin,Helmholtzplatz,131,169.0,165.57,202.0,27964.0,0.122
+Berlin,Schöneberg-Süd,131,146.5,150.09,101.0,14879.0,0.137
+Berlin,Frankfurter Allee Nord,127,124.0,126.13,113.0,15505.0,0.165
+Berlin,Schillerpromenade,123,116.0,126.03,88.0,10342.0,0.122
+Berlin,Tempelhof,121,90.67,100.28,76.0,8314.0,0.116
+Berlin,Wedding Zentrum,108,111.8,130.81,184.0,17064.0,0.259
+Berlin,nördliche Luisenstadt,103,123.35,123.16,214.0,20617.0,0.146
+Berlin,Rixdorf,100,112.61,108.31,88.0,11526.0,0.15
+Berlin,Regierungsviertel,97,189.0,176.69,139.0,23539.0,0.124
+Berlin,Neue Kantstraße,96,137.25,144.33,94.5,12686.0,0.125
+Berlin,Prenzlauer Berg Nord,95,155.0,147.55,255.0,29400.0,0.105
+Berlin,Tiergarten Süd,94,133.04,136.3,100.5,12548.0,0.117
+Berlin,Weißensee,91,121.0,128.95,88.0,12260.0,0.088
+Berlin,Parkviertel,87,87.0,87.35,56.0,6845.0,0.115
+Berlin,Karl-Marx-Allee-Nord,82,142.85,146.1,139.0,20076.0,0.098
+Berlin,Schloß Charlottenburg,78,105.25,110.01,179.0,16544.0,0.141
+Berlin,Kantstraße,76,125.84,129.17,82.0,10296.0,0.105
+Berlin,Volkspark Wilmersdorf,74,89.55,96.06,139.0,13725.0,0.122
+Berlin,Osloer Straße,72,95.02,101.21,94.5,10253.0,0.181
+Berlin,Prenzlauer Berg Ost,69,134.0,134.84,113.0,16576.0,0.072
+Berlin,Halensee,66,149.97,142.75,76.0,11783.0,0.152
+Berlin,Neu Lichtenberg,61,110.0,117.4,126.0,16412.0,0.164
+Berlin,Grunewald,57,142.67,156.13,0.0,0.0,0.123
+Berlin,Pankow Süd,56,121.25,112.69,107.0,10854.0,0.089
+Berlin,Westend,54,126.46,119.45,88.0,11394.0,0.074
+Berlin,Pankow Zentrum,51,146.67,125.17,50.0,8595.0,0.078
+Berlin,Friedenau,50,136.0,144.8,88.0,11274.0,0.14
+Berlin,Albrechtstr.,44,124.78,116.3,38.0,5083.0,0.136
+Berlin,Alt  Treptow,44,118.0,128.0,25.0,2570.0,0.227
+Berlin,Drakestr.,44,119.5,115.97,63.0,8128.0,0.023
+Berlin,Zehlendorf  Nord,44,89.79,81.87,82.0,12058.0,0.091
+Berlin,Heerstrasse,42,98.75,96.23,19.0,3678.0,0.048
+Berlin,Karlshorst,42,146.36,121.96,82.0,12024.0,0.071
+Berlin,Rudow,40,93.34,97.49,88.0,7768.0,0.175
+Berlin,Rummelsburger Bucht,36,160.25,148.02,139.0,16254.0,0.028
+Berlin,Rahnsdorf/Hessenwinkel,35,134.67,144.31,76.0,10302.0,0.143
+Berlin,Blankenfelde/Niederschönhausen,34,132.6,135.34,89.0,8626.0,0.088
+Berlin,Ost 2,34,77.21,79.93,116.5,6319.0,0.147
+Berlin,Mierendorffplatz,31,80.09,107.86,63.0,10646.0,0.387
+Berlin,Friedrichshagen,30,136.32,127.1,13.0,2326.0,0.033
+Columbus,Near North/University,769,179.5,179.54,132.0,22608.0,0.099
+Columbus,Near South,446,167.42,177.43,102.0,15474.0,0.117
+Columbus,Near East,328,158.45,167.08,84.0,13406.0,0.162
+Columbus,Downtown,160,159.0,152.4,69.0,10568.0,0.094
+Columbus,West Olentangy,137,174.5,190.81,102.0,17901.0,0.153
+Columbus,Clintonville,97,191.0,204.7,162.0,29933.0,0.124
+Columbus,Northland,92,107.52,98.87,60.0,5733.0,0.098
+Columbus,South Linden,90,107.6,109.05,60.0,5988.0,0.167
+Columbus,North Linden,71,134.86,152.37,60.0,7973.0,0.155
+Columbus,Eastmoor/Walnut Ridge,69,98.0,95.3,54.0,5081.0,0.145
+Columbus,Franklinton,50,162.0,175.73,87.0,13650.0,0.12
+Columbus,Northwest,43,126.0,134.45,120.0,14163.0,0.047
+Columbus,Eastland/Brice,40,112.7,96.03,24.0,1713.0,0.2
+Columbus,Far North,33,108.0,101.63,18.0,2563.0,0.061
+Columbus,Far Northwest,30,246.5,260.05,123.0,33901.0,0.033
+Columbus,Hilltop,30,162.25,169.75,66.0,12040.0,0.067

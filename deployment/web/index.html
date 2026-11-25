@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TravelPulse – Nightly price estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --navy:#0b2545; --navy2:#13315c; --teal:#0f9d94; --teal-soft:#e3f5f3;
+  --amber:#f59e0b; --amber-soft:#fff3d6; --bg:#f5f7fa; --card:#fff;
+  --ink:#14213d; --mute:#64748b; --line:#e3e8ef; --up:#0f9d6e; --down:#d1435b;
+  --focus:#2563eb; --radius:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5}
+a{color:var(--teal)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:0;background:var(--card);color:var(--ink);padding:8px 12px;z-index:100}
+.skip:focus{left:8px;top:8px}
+
+/* nav */
+nav.top{position:sticky;top:0;z-index:50;background:var(--navy);color:#fff;display:flex;align-items:center;gap:20px;padding:0 24px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:19px;letter-spacing:.2px;padding:14px 0}
+.brand span{color:var(--teal)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{background:none;border:0;color:#c9d5e8;font:inherit;font-weight:600;padding:16px 14px;cursor:pointer;border-bottom:3px solid transparent}
+.tab:hover{color:#fff}
+
+.tab[aria-selected="true"]{color:#fff;border-bottom-color:var(--teal)}
+.tab:focus-visible{outline-offset:-3px}
+
+main{max-width:1080px;margin:0 auto;padding:24px 16px 60px}
+.panel[hidden]{display:none}
+h1,h2,h3{margin:0 0 6px;line-height:1.25}
+h2{font-size:19px;font-weight:800;color:var(--navy)}
+h3{font-size:15px;font-weight:700;color:var(--navy2)}
+.lead{color:var(--mute);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:0 1px 2px rgba(11,37,69,.04)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+
+/* forms */
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:4px}
+label,.lbl{font-weight:600;font-size:13px;color:var(--navy2)}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+input:hover,select:hover,textarea:hover{border-color:#c4cddb}
+textarea{resize:vertical;min-height:70px}
+.hint{font-size:12px;color:var(--mute)}
+fieldset{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:16px 0 0}
+legend{font-weight:700;font-size:13px;color:var(--navy2);padding:0 6px}
+.checks{display:flex;flex-wrap:wrap;gap:8px 18px}
+.check{display:flex;align-items:center;gap:7px;font-weight:500;color:var(--ink);font-size:14px}
+.check input{width:17px;height:17px;accent-color:var(--teal)}
+#map{height:300px;border-radius:12px;border:1px solid var(--line);margin-top:6px;z-index:1}
+
+/* buttons */
+.btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:11px 20px;cursor:pointer;background:var(--teal);color:#fff;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{filter:brightness(.95)}
+.btn.ghost{background:var(--teal-soft);color:var(--navy2)}
+
+.btn[disabled]{opacity:.7;cursor:progress}
+.spin{width:15px;height:15px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:sp .7s linear infinite;display:none}
+.btn.ghost .spin{border-color:rgba(11,37,69,.2);border-top-color:var(--navy2)}
+.btn.loading .spin{display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2s}html{scroll-behavior:auto}}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+
+/* messages */
+.msg{border-radius:10px;padding:10px 14px;font-size:14px;margin-top:12px}
+.msg.err{background:#fdecef;color:#8f2336;border:1px solid #f4c4cd}
+.msg.info{background:var(--amber-soft);color:#7a5200;border:1px solid #f7dc9b}
+.msg ul{margin:4px 0 0 18px;padding:0}
+.muted{color:var(--mute);font-size:13px}
+.empty{color:var(--mute);text-align:center;padding:26px 10px}
+
+/* result */
+.price-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.price{font-size:42px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+.price small{font-size:15px;font-weight:600;color:var(--mute)}
+.range{background:var(--teal-soft);color:var(--navy2);border-radius:999px;padding:5px 14px;font-weight:700;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:14px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat .k{font-size:12px;color:var(--mute);font-weight:600}
+.stat .v{font-size:22px;font-weight:800;color:var(--navy)}
+.stat .s{font-size:12px;color:var(--mute)}
+
+/* bars */
+.bars{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:9px}
+.bar-row{display:grid;grid-template-columns:minmax(110px,38%) 1fr 70px;gap:10px;align-items:center;font-size:13.5px}
+.bar-track{background:var(--bg);border-radius:6px;height:12px;overflow:hidden}
+.bar{height:100%;border-radius:6px}
+
+.bar.up{background:var(--up)} .bar.down{background:var(--down)}
+.bar-val{text-align:right;font-weight:700}
+.up-t{color:var(--up)} .down-t{color:var(--down)}
+
+/* tables */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:620px;background:var(--card)}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:14px}
+th{background:var(--bg);font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mute)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.badge{display:inline-block;border-radius:999px;padding:2px 11px;font-size:12px;font-weight:700;color:#fff;background:var(--mute)}
+.badge.under{background:var(--up)} .badge.over{background:var(--down)}
+.filters{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+.filters .field{min-width:170px}
+
+/* list */
+.plain{margin:8px 0 0;padding-left:20px}
+.plain li{margin:4px 0}
+.summary{background:var(--bg);border:1px dashed var(--line);border-radius:12px;padding:12px 14px;font-size:14px}
+
+/* chat */
+.chat{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding:4px 2px;margin-bottom:12px}
+.bubble{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
+.bubble.user{align-self:flex-end;background:var(--navy2);color:#fff;border-bottom-right-radius:4px}
+.bubble.bot{align-self:flex-start;background:var(--teal-soft);color:var(--ink);border-bottom-left-radius:4px}
+.bubble.err{align-self:flex-start;background:#fdecef;color:#8f2336}
+.row{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.row .grow{flex:1;min-width:200px}
+
+footer{max-width:1080px;margin:0 auto;padding:0 16px 40px;color:var(--mute);font-size:12.5px}
+</style>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="top" aria-label="Main">
+  <div class="brand">Travel<span>Pulse</span></div>
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-estimator" aria-controls="panel-estimator" aria-selected="true">Estimator</button>
+    <button class="tab" role="tab" id="tab-mispricing" aria-controls="panel-mispricing" aria-selected="false" tabindex="-1">Mispricing</button>
+    <button class="tab" role="tab" id="tab-market" aria-controls="panel-market" aria-selected="false" tabindex="-1">Market</button>
+    <button class="tab" role="tab" id="tab-seasonality" aria-controls="panel-seasonality" aria-selected="false" tabindex="-1">Seasonality</button>
+    <button class="tab" role="tab" id="tab-invest" aria-controls="panel-invest" aria-selected="false" tabindex="-1">Invest</button>
+    <button class="tab" role="tab" id="tab-advisor" aria-controls="panel-advisor" aria-selected="false" tabindex="-1">Advisor</button>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- ============ ESTIMATOR ============ -->
+<section class="panel" id="panel-estimator" role="tabpanel" aria-labelledby="tab-estimator">
+  <div class="card">
+    <h2>Nightly price estimator</h2>
+    <p class="lead">Describe a listing in Amsterdam, Barcelona, Berlin or Columbus and pick its location on the map. Outputs are estimates from a model trained on a single scrape snapshot.</p>
+    <div class="field" style="margin-bottom:14px">
+      <label for="nl-text">Or describe the listing in words (Arabic or English)</label>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <textarea id="nl-text" rows="2" style="flex:1" placeholder="شقة غرفتين في برشلونة جنب Sagrada Familia فيها مطبخ و Wifi"></textarea>
+        <button type="button" class="btn" id="btn-parse"><span class="spin" aria-hidden="true"></span><span>Fill form</span></button>
+      </div>
+      <div id="nl-out" aria-live="polite"></div>
+    </div>
+    <form id="listing-form" novalidate>
+      <div class="fields">
+        <div class="field">
+          <label for="f-city">City</label>
+          <select id="f-city" name="city">
+            <option value="Amsterdam">Amsterdam</option>
+            <option value="Barcelona">Barcelona</option>
+            <option value="Berlin">Berlin</option>
+            <option value="Columbus">Columbus</option>
+          </select>
+
+        </div>
+        <div class="field">
+          <label for="f-room">Room type</label>
+          <select id="f-room" name="room_type">
+            <option>Entire home/apt</option>
+            <option>Private room</option>
+            <option>Shared room</option>
+            <option>Hotel room</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-prop">Property type</label>
+          <input type="text" id="f-prop" name="property_type" value="Entire rental unit" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f-acc">Guests (accommodates)</label>
+          <input type="number" id="f-acc" name="accommodates" min="1" step="1" value="2">
+        </div>
+        <div class="field">
+          <label for="f-bed">Bedrooms</label>
+          <input type="number" id="f-bed" name="bedrooms" min="0" step="1" value="1">
+        </div>
+        <div class="field">
+          <label for="f-beds">Beds</label>
+          <input type="number" id="f-beds" name="beds" min="0" step="1" value="1">
+        </div>
+        <div class="field">
+          <label for="f-bath">Bathrooms</label>
+          <input type="number" id="f-bath" name="bathrooms" min="0" step="0.5" value="1">
+        </div>
+      </div>
+
+
+      <fieldset>
+        <legend>Location</legend>
+        <p class="hint" style="margin:0">Click the map to place the listing. You can also type coordinates.</p>
+        <div id="map" role="application" aria-label="Map for picking the listing location"></div>
+        <div class="fields" style="margin-top:10px">
+          <div class="field">
+            <label for="f-lat">Latitude</label>
+            <input type="number" id="f-lat" name="latitude" step="any" placeholder="Click the map">
+          </div>
+          <div class="field">
+            <label for="f-lon">Longitude</label>
+            <input type="number" id="f-lon" name="longitude" step="any" placeholder="Click the map">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Key amenities</legend>
+        <div class="checks" id="amenities"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Host and reviews</legend>
+        <div class="checks" style="margin-bottom:12px">
+          <label class="check"><input type="checkbox" name="host_is_superhost"> Superhost</label>
+          <label class="check"><input type="checkbox" name="host_identity_verified"> Host identity verified</label>
+        </div>
+        <div class="fields">
+          <div class="field">
+            <label for="f-av">Availability (next 30 days)</label>
+            <input type="number" id="f-av" name="availability_30" min="0" max="30" step="1">
+          </div>
+
+          <div class="field">
+            <label for="f-nr">Number of reviews</label>
+            <input type="number" id="f-nr" name="number_of_reviews" min="0" step="1">
+          </div>
+          <div class="field">
+            <label for="f-rpm">Reviews per month</label>
+            <input type="number" id="f-rpm" name="reviews_per_month" min="0" step="any">
+          </div>
+          <div class="field">
+            <label for="f-rat">Review score (rating)</label>
+            <input type="number" id="f-rat" name="review_scores_rating" min="0" step="any">
+          </div>
+        </div>
+        <p class="hint">Leave the review and availability fields empty if the listing has none.</p>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="btn" id="btn-estimate"><span class="spin" aria-hidden="true"></span><span>Estimate price</span></button>
+      </div>
+      <div id="form-errors" aria-live="polite"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>See what your listing should earn</h2>
+    <div id="result" aria-live="polite"><p class="empty">Fill in the form and press “Estimate price”.</p></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Where the price comes from</h2>
+      <div id="groups" aria-live="polite"><p class="empty">Appears after an estimate.</p></div>
+
+    </div>
+    <div class="card">
+      <h2>Top factors</h2>
+      <div id="factors" aria-live="polite"><p class="empty">Appears after an estimate.</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Try a change</h2>
+    <p class="lead">See how the estimate moves if one thing about the listing changes.</p>
+    <div class="row">
+      <div class="field" style="min-width:210px">
+        <label for="wi-field">What to change</label>
+        <select id="wi-field"></select>
+      </div>
+      <div class="field" style="min-width:170px" id="wi-value-wrap"></div>
+      <div class="field" style="justify-content:flex-end">
+        <span class="lbl" aria-hidden="true">&nbsp;</span>
+        <button type="button" class="btn" id="btn-whatif"><span class="spin" aria-hidden="true"></span><span>Compare</span></button>
+      </div>
+    </div>
+    <div id="whatif-out" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2>Biggest predicted gains</h2>
+    <p class="lead">Changes the model expects to raise the nightly price the most for this listing.</p>
+    <button type="button" class="btn ghost" id="btn-improve"><span class="spin" aria-hidden="true"></span><span>Find improvements</span></button>
+    <div id="improve-out" aria-live="polite"></div>
+  </div>
+</section>
+
+
+<!-- ============ MISPRICING ============ -->
+<section class="panel" id="panel-mispricing" role="tabpanel" aria-labelledby="tab-mispricing" hidden>
+  <div class="card">
+    <h2>Mispricing</h2>
+    <p class="lead">Listings whose actual price differs from the model’s prediction. Showing up to 50 rows.</p>
+    <div class="filters">
+      <div class="field">
+        <label for="mis-city">City</label>
+        <select id="mis-city">
+          <option value="">All cities</option>
+          <option>Amsterdam</option><option>Barcelona</option><option>Berlin</option><option>Columbus</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="mis-flag">Flag</label>
+        <select id="mis-flag">
+          <option value="">All flags</option>
+          <option value="underpriced">Underpriced</option>
+          <option value="overpriced">Overpriced</option>
+          <option value="fair">Fair</option>
+        </select>
+      </div>
+      <button type="button" class="btn" id="btn-mis"><span class="spin" aria-hidden="true"></span><span>Apply filters</span></button>
+    </div>
+    <div id="mis-out" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ MARKET ============ -->
+<section class="panel" id="panel-market" role="tabpanel" aria-labelledby="tab-market" hidden>
+  <div class="card">
+    <h2>Market overview</h2>
+
+    <p class="lead">Per-neighbourhood summary.</p>
+    <div class="filters">
+      <div class="field">
+        <label for="mkt-city">City</label>
+        <select id="mkt-city">
+          <option value="">All cities</option>
+          <option>Amsterdam</option><option>Barcelona</option><option>Berlin</option><option>Columbus</option>
+        </select>
+      </div>
+      <button type="button" class="btn" id="btn-mkt"><span class="spin" aria-hidden="true"></span><span>Refresh</span></button>
+    </div>
+    <div id="mkt-note" aria-live="polite"></div>
+    <div id="mkt-out" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ SEASONALITY ============ -->
+<section class="panel" id="panel-seasonality" role="tabpanel" aria-labelledby="tab-seasonality" hidden>
+  <div class="card">
+    <h2>Availability by month</h2>
+    <p class="lead">Share of listings marked available by hosts, per month. This is an availability proxy from the Inside Airbnb calendar, not measured demand or bookings.</p>
+    <div id="sea-note" aria-live="polite"></div>
+    <div id="sea-out" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ INVEST ============ -->
+<section class="panel" id="panel-invest" role="tabpanel" aria-labelledby="tab-invest" hidden>
+  <div class="card">
+    <h2>Investment estimate</h2>
+    <p class="lead">Uses the listing from the Estimator tab. <a href="#estimator" data-goto="estimator">Edit the listing</a>.</p>
+    <div class="summary" id="inv-summary" aria-live="polite"></div>
+    <form id="invest-form" novalidate style="margin-top:14px">
+      <div class="fields">
+        <div class="field">
+          <label for="inv-price">Purchase price</label>
+          <input type="number" id="inv-price" min="0" step="any" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="inv-costs">Annual costs</label>
+          <input type="number" id="inv-costs" min="0" step="any" inputmode="decimal">
+        </div>
+
+        <div class="field">
+          <label for="inv-occ">Occupancy override (days per year, optional)</label>
+          <input type="number" id="inv-occ" min="0" max="365" step="1">
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn"><span class="spin" aria-hidden="true"></span><span>Calculate</span></button>
+      </div>
+    </form>
+    <div id="inv-out" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ ADVISOR ============ -->
+<section class="panel" id="panel-advisor" role="tabpanel" aria-labelledby="tab-advisor" hidden>
+  <div class="card">
+    <h2>Advisor</h2>
+    <p class="lead">Ask a question about the listing from the Estimator tab. <a href="#estimator" data-goto="estimator">Edit the listing</a>.</p>
+    <div class="summary" id="adv-summary" style="margin-bottom:14px" aria-live="polite"></div>
+    <div class="chat" id="chat" role="log" aria-live="polite" aria-label="Conversation with the advisor">
+      <div class="bubble bot">Ask me how to price or improve this listing.</div>
+    </div>
+    <form id="advisor-form" novalidate>
+      <div class="row">
+        <div class="grow field">
+          <label for="adv-q">Your question</label>
+          <textarea id="adv-q" placeholder="For example: what would help this listing earn more per night?"></textarea>
+          <span class="hint">Press Ctrl+Enter (or Cmd+Enter) to send.</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn" id="btn-adv"><span class="spin" aria-hidden="true"></span><span>Send</span></button>
+
+      </div>
+    </form>
+  </div>
+</section>
+
+</main>
+<footer>TravelPulse outputs are model estimates built from a single scrape snapshot. Treat them as guidance, not guarantees.</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------------- helpers ---------------- */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+function h(tag, props, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(props || {})){
+    if (k === "class") e.className = v;
+    else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()){
+    if (c == null || c === false) continue;
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return e;
+}
+function clear(el){ while (el.firstChild) el.removeChild(el.firstChild); return el; }
+
+function setContent(el, ...nodes){ clear(el); nodes.flat().forEach(n => n && el.append(n)); }
+
+const usd = new Intl.NumberFormat("en-US", {style:"currency", currency:"USD", maximumFractionDigits:0});
+const num1 = new Intl.NumberFormat("en-US", {maximumFractionDigits:1});
+const num2 = new Intl.NumberFormat("en-US", {maximumFractionDigits:2});
+const int0 = new Intl.NumberFormat("en-US", {maximumFractionDigits:0});
+const money = v => (typeof v === "number" && isFinite(v)) ? usd.format(v) : "–";
+const pct = v => (typeof v === "number" && isFinite(v)) ? num1.format(v) + "%" : "–";
+const intf = v => (typeof v === "number" && isFinite(v)) ? int0.format(v) : "–";
+const pretty = k => String(k).replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+
+function pickNum(o, keys){
+  if (!o || typeof o !== "object") return undefined;
+  for (const k of keys){
+    const v = o[k];
+    if (typeof v === "number" && isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "" && isFinite(Number(v))) return Number(v);
+  }
+  return undefined;
+}
+function pickStr(o, keys){
+  if (!o || typeof o !== "object") return undefined;
+  for (const k of keys){ if (o[k] != null && o[k] !== "") return String(o[k]); }
+  return undefined;
+}
+function asList(data, keys){
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object"){
+    for (const k of keys) if (Array.isArray(data[k])) return data[k];
+  }
+  return null;
+}
+
+
+/* ---------------- API layer ---------------- */
+class ApiError extends Error {
+  constructor(status, detail){ super(detail); this.status = status; this.detail = detail; }
+}
+function detailOf(data, status){
+  if (data && typeof data === "object" && "detail" in data){
+    const d = data.detail;
+    if (typeof d === "string") return d;
+    if (Array.isArray(d)) return d.map(x => {
+      const where = Array.isArray(x.loc) ? x.loc.filter(p => p !== "body").join(".") : "";
+      return (where ? where + ": " : "") + (x.msg || JSON.stringify(x));
+    }).join("; ");
+    return JSON.stringify(d);
+  }
+  if (typeof data === "string" && data.trim()) return data.slice(0, 300);
+  return "Request failed (HTTP " + status + ").";
+}
+async function api(path, opts){
+  opts = opts || {};
+  let res;
+  try {
+    res = await fetch(path, {
+      method: opts.method || "GET",
+      headers: opts.body ? {"Content-Type":"application/json", "Accept":"application/json"} : {"Accept":"application/json"},
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+  } catch (e){
+    throw new ApiError(0, "Could not reach the server. Check that the API is running.");
+  }
+  const text = await res.text();
+  let data = null;
+
+  try { data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
+  if (!res.ok) throw new ApiError(res.status, detailOf(data, res.status));
+  return data;
+}
+
+/* The request shapes below are the only place that knows how the endpoints are called. */
+const API = {
+  predict:      listing => api("/predict",       {method:"POST", body: listing}),
+  predictRange: listing => api("/predict-range", {method:"POST", body: listing}),
+  explain:      listing => api("/explain",       {method:"POST", body: listing}),
+  whatif:       (listing, changes, name) => api("/whatif", {method:"POST", body: {listing, scenarios: [{name: name || "Your change", changes}]}}),
+  improve:      listing => api("/improve",       {method:"POST", body: listing}),
+  mispricing:   q => api("/mispricing?" + new URLSearchParams(q).toString()),
+  market:       q => api("/market" + (q && Object.keys(q).length ? "?" + new URLSearchParams(q).toString() : "")),
+  invest:       body => api("/invest",           {method:"POST", body}),
+  advisor:      (question, listing) => api("/advisor", {method:"POST", body: {question, listing}}),
+  seasonality:  () => api("/seasonality"),
+  parseListing: text => api("/parse-listing",     {method:"POST", body: {text}})
+};
+
+function busy(btn, on){
+  btn.classList.toggle("loading", on);
+  btn.disabled = on;
+  btn.setAttribute("aria-busy", on ? "true" : "false");
+}
+async function withBusy(btn, fn){
+  busy(btn, true);
+  try { return await fn(); } finally { busy(btn, false); }
+}
+function errBox(msg, kind){ return h("div", {class:"msg " + (kind || "err"), role: kind === "info" ? null : "alert", text: msg}); }
+function errList(list){
+  return h("div", {class:"msg err", role:"alert"}, h("strong", {text:"Please fix the following:"}), h("ul", null, list.map(t => h("li", {text:t}))));
+}
+
+
+/* generic fallback so an unexpected response shape is still visible */
+function renderKV(obj){
+  const rows = Object.entries(obj || {}).filter(([,v]) => v == null || typeof v !== "object");
+  if (!rows.length) return h("p", {class:"muted", text:"The server returned no displayable fields."});
+  return h("ul", {class:"plain"}, rows.map(([k,v]) => h("li", null, h("strong", {text: pretty(k) + ": "}), String(v))));
+}
+
+/* ---------------- tabs ---------------- */
+const TABS = ["estimator","mispricing","market","seasonality","invest","advisor"];
+const loaded = {mispricing:false, market:false, seasonality:false};
+let map;
+
+function showTab(name, focus){
+  if (!TABS.includes(name)) name = "estimator";
+  TABS.forEach(t => {
+    const sel = t === name;
+    const btn = $("#tab-" + t);
+    btn.setAttribute("aria-selected", sel ? "true" : "false");
+    btn.tabIndex = sel ? 0 : -1;
+    $("#panel-" + t).hidden = !sel;
+  });
+  if (focus) $("#tab-" + name).focus();
+  if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  if (name === "estimator" && map) setTimeout(() => map.invalidateSize(), 50);
+  if (name === "mispricing" && !loaded.mispricing) loadMispricing();
+  if (name === "seasonality" && !loaded.seasonality) loadSeasonality();
+  if (name === "market" && !loaded.market) loadMarket();
+  if (name === "invest") renderSummaries();
+  if (name === "advisor") renderSummaries();
+}
+$$(".tab").forEach((b, i) => {
+  b.addEventListener("click", () => showTab(b.id.replace("tab-", "")));
+  b.addEventListener("keydown", e => {
+
+    let j = null;
+    if (e.key === "ArrowRight") j = (i + 1) % TABS.length;
+    if (e.key === "ArrowLeft") j = (i - 1 + TABS.length) % TABS.length;
+    if (e.key === "Home") j = 0;
+    if (e.key === "End") j = TABS.length - 1;
+    if (j !== null){ e.preventDefault(); showTab(TABS[j], true); }
+  });
+});
+$$("[data-goto]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); showTab(a.dataset.goto, true); }));
+window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
+
+/* ---------------- listing form ---------------- */
+const AMENITIES = ["Wifi","Kitchen","Air conditioning","Pool","Parking","Washer","TV","Heating","Elevator"];
+const CITY_CENTER = {
+  "Amsterdam":[52.3676, 4.9041], "Barcelona":[41.3874, 2.1686],
+  "Berlin":[52.5200, 13.4050], "Columbus":[39.9612, -82.9988]
+};
+const form = $("#listing-form");
+
+AMENITIES.forEach((a, i) => {
+  $("#amenities").append(
+    h("label", {class:"check", for:"am-" + i},
+      h("input", {type:"checkbox", id:"am-" + i, name:"amenity", value:a}), a)
+  );
+});
+
+function readListing(){
+  const errors = [];
+  const v = n => form.elements[n].value.trim();
+  const city = v("city");
+  if (!city) errors.push("Choose a city.");
+  const latitude = parseFloat(v("latitude")), longitude = parseFloat(v("longitude"));
+
+  if (!isFinite(latitude) || !isFinite(longitude)) errors.push("Pick the listing location on the map.");
+  const room_type = v("room_type");
+  if (!room_type) errors.push("Choose a room type.");
+
+  const number = (name, label, min, required, max) => {
+    const s = v(name);
+    if (s === ""){ if (required) errors.push(label + " is required."); return undefined; }
+    const x = Number(s);
+    if (!isFinite(x) || x < min || (max != null && x > max)){
+      errors.push(label + " must be " + (max != null ? "between " + min + " and " + max : min + " or more") + ".");
+      return undefined;
+    }
+    return x;
+  };
+  const listing = {
+    city, latitude, longitude, room_type,
+    accommodates: number("accommodates", "Guests", 1, true),
+    bedrooms: number("bedrooms", "Bedrooms", 0, true),
+    beds: number("beds", "Beds", 0, true),
+    bathrooms: number("bathrooms", "Bathrooms", 0, true),
+    amenities: $$('input[name="amenity"]:checked', form).map(c => c.value),
+    host_is_superhost: form.elements.host_is_superhost.checked,
+    host_identity_verified: form.elements.host_identity_verified.checked
+  };
+  const pt = v("property_type");
+  if (pt) listing.property_type = pt;
+  const opt = [
+    ["availability_30","Availability (30 days)",0,30],
+    ["number_of_reviews","Number of reviews",0,null],
+    ["reviews_per_month","Reviews per month",0,null],
+    ["review_scores_rating","Review score",0,null]
+  ];
+
+  opt.forEach(([n, l, mn, mx]) => { const x = number(n, l, mn, false, mx); if (x !== undefined) listing[n] = x; });
+  return {listing, errors};
+}
+
+function describeListing(l){
+  const bits = [l.city, l.room_type, l.accommodates + " guest" + (l.accommodates === 1 ? "" : "s"),
+    l.bedrooms + " bedroom" + (l.bedrooms === 1 ? "" : "s"), l.bathrooms + " bathroom" + (l.bathrooms === 1 ? "" : "s")];
+  if (l.amenities && l.amenities.length) bits.push(l.amenities.join(", "));
+  return bits.join(" · ");
+}
+function renderSummaries(){
+  const {listing, errors} = readListing();
+  ["inv-summary","adv-summary"].forEach(id => {
+    const el = $("#" + id);
+    if (errors.length) setContent(el, h("span", {text:"The listing is incomplete: " + errors.join(" ")}));
+    else setContent(el, h("strong", {text:"Listing: "}), describeListing(listing));
+  });
+}
+
+/* ---------------- map ---------------- */
+let marker = null;
+function initMap(){
+  const c = CITY_CENTER[form.elements.city.value];
+  map = L.map("map").setView(c, 11);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+  map.on("click", e => setPoint(e.latlng.lat, e.latlng.lng));
+}
+function setPoint(lat, lng){
+  form.elements.latitude.value = lat.toFixed(6);
+  form.elements.longitude.value = lng.toFixed(6);
+
+  if (marker) marker.setLatLng([lat, lng]); else marker = L.marker([lat, lng]).addTo(map);
+}
+["latitude","longitude"].forEach(n => form.elements[n].addEventListener("change", () => {
+  const la = parseFloat(form.elements.latitude.value), lo = parseFloat(form.elements.longitude.value);
+  if (isFinite(la) && isFinite(lo)){ setPoint(la, lo); map.panTo([la, lo]); }
+}));
+form.elements.city.addEventListener("change", () => {
+  map.setView(CITY_CENTER[form.elements.city.value], 11);
+  if (marker){ map.removeLayer(marker); marker = null; }
+  form.elements.latitude.value = ""; form.elements.longitude.value = "";
+});
+
+/* ---------------- estimator ---------------- */
+const PRICE_KEYS = ["predicted_price","price","prediction","nightly_price","predicted_nightly_price","estimate"];
+let lastPrice = null;
+
+function renderEffects(target, data, keys, emptyMsg){
+  let items = asList(data, keys);
+  if (!items && data && typeof data === "object"){
+    for (const k of keys){
+      const o = data[k];
+      if (o && typeof o === "object" && !Array.isArray(o)){
+        items = Object.entries(o).map(([name, value]) => ({name, value}));
+        break;
+      }
+    }
+  }
+  if (!items || !items.length){ setContent(target, h("p", {class:"empty", text: emptyMsg})); return; }
+  const rows = items.map(it => ({
+    label: pickStr(it, ["group","name","feature","label","factor"]) || "",
+    value: pickNum(it, ["effect_percent","effect","contribution","impact","shap","delta","mean_effect","value"])
+  })).filter(r => r.label && r.value !== undefined);
+
+  if (!rows.length){ setContent(target, h("p", {class:"empty", text: emptyMsg})); return; }
+  const max = Math.max(...rows.map(r => Math.abs(r.value))) || 1;
+  setContent(target,
+    h("ul", {class:"bars"}, rows.map(r => h("li", {class:"bar-row"},
+      h("span", {text: pretty(r.label)}),
+      h("span", {class:"bar-track", "aria-hidden":"true"},
+        h("span", {class:"bar " + (r.value >= 0 ? "up" : "down"), style:"display:block;width:" + Math.max(3, Math.abs(r.value) / max * 100) + "%"})),
+      h("span", {class:"bar-val " + (r.value >= 0 ? "up-t" : "down-t"), text:(r.value >= 0 ? "+" : "") + num2.format(r.value) + "%"})
+    ))),
+    h("p", {class:"hint", style:"margin-top:10px", text:"Each bar is how much that part raises (+) or lowers (-) the price versus an average listing, in percent."})
+  );
+}
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#btn-estimate");
+  const errEl = $("#form-errors");
+  clear(errEl);
+  const {listing, errors} = readListing();
+  if (errors.length){ errEl.append(errList(errors)); return; }
+
+  await withBusy(btn, async () => {
+    setContent($("#result"), h("p", {class:"empty", text:"Estimating…"}));
+    const [p, r, x] = await Promise.allSettled([API.predict(listing), API.predictRange(listing), API.explain(listing)]);
+
+    if (p.status === "rejected"){
+      setContent($("#result"), errBox(p.reason.detail || p.reason.message));
+      lastPrice = null;
+    } else {
+      const price = pickNum(p.value, PRICE_KEYS);
+      lastPrice = price === undefined ? null : price;
+      const priceRow = h("div", {class:"price-row"},
+
+        h("div", {class:"price"}, price !== undefined ? money(price) : "–", h("small", {text:" per night"})));
+      const notes = [];
+      if (r.status === "fulfilled"){
+        const lo = pickNum(r.value, ["lower","low","lower_bound","p10","lo"]);
+        const hi = pickNum(r.value, ["upper","high","upper_bound","p90","hi"]);
+        if (lo !== undefined && hi !== undefined){
+          priceRow.append(h("span", {class:"range", text: money(lo) + " – " + money(hi) + " (80% range)"}));
+        }
+      } else if (r.reason.status === 503){
+        notes.push(h("p", {class:"muted", text:"Price ranges are not calibrated yet on this deployment."}));
+      } else {
+        notes.push(h("p", {class:"muted", text:"Price range unavailable: " + (r.reason.detail || r.reason.message)}));
+      }
+      const extra = (p.value && typeof p.value === "object") ? Object.entries(p.value).filter(([k,v]) => !PRICE_KEYS.includes(k) && (v == null || typeof v !== "object")) : [];
+      setContent($("#result"), priceRow, notes,
+        extra.length ? h("details", {style:"margin-top:10px"}, h("summary", {text:"More details from the server"}), renderKV(Object.fromEntries(extra))) : null,
+        h("p", {class:"hint", style:"margin-top:10px", text:"An estimate based on a single scrape snapshot, not a guarantee."}));
+    }
+
+    if (x.status === "fulfilled"){
+      renderEffects($("#groups"), x.value, ["group_effects","groups","group_contributions","effects"], "No group breakdown was returned.");
+      renderEffects($("#factors"), x.value, ["top_factors","factors","top_features","contributions","features"], "No factor breakdown was returned.");
+    } else {
+      setContent($("#groups"), errBox(x.reason.detail || x.reason.message));
+      setContent($("#factors"), errBox(x.reason.detail || x.reason.message));
+    }
+  });
+});
+
+/* ---- what-if ---- */
+const WHATIF_FIELDS = [
+  {id:"accommodates", label:"Guests (accommodates)", type:"number", min:1, step:1},
+
+  {id:"bedrooms", label:"Bedrooms", type:"number", min:0, step:1},
+  {id:"beds", label:"Beds", type:"number", min:0, step:1},
+  {id:"bathrooms", label:"Bathrooms", type:"number", min:0, step:0.5},
+  {id:"host_is_superhost", label:"Superhost status", type:"bool"},
+  {id:"host_identity_verified", label:"Host identity verified", type:"bool"}
+].concat(AMENITIES.map(a => ({id:"amenity:" + a, label:"Amenity: " + a, type:"amenity", name:a})));
+
+const wiField = $("#wi-field");
+WHATIF_FIELDS.forEach(f => wiField.append(h("option", {value:f.id, text:f.label})));
+function renderWiValue(){
+  const f = WHATIF_FIELDS.find(x => x.id === wiField.value);
+  const wrap = $("#wi-value-wrap");
+  clear(wrap);
+  if (f.type === "number"){
+    wrap.append(h("label", {for:"wi-value", text:"New value"}), h("input", {type:"number", id:"wi-value", min:f.min, step:f.step}));
+  } else {
+    const opts = f.type === "bool" ? [["true","Yes"],["false","No"]] : [["add","Add it"],["remove","Remove it"]];
+    wrap.append(h("label", {for:"wi-value", text: f.type === "bool" ? "New value" : "Action"}),
+      h("select", {id:"wi-value"}, opts.map(([v, t]) => h("option", {value:v, text:t}))));
+  }
+}
+wiField.addEventListener("change", renderWiValue);
+renderWiValue();
+
+$("#btn-whatif").addEventListener("click", async e => {
+  const btn = e.currentTarget, out = $("#whatif-out");
+  clear(out);
+  const {listing, errors} = readListing();
+  if (errors.length){ out.append(errList(errors)); return; }
+  const f = WHATIF_FIELDS.find(x => x.id === wiField.value);
+  const raw = $("#wi-value").value;
+  const changes = {};
+
+  if (f.type === "number"){
+    const x = Number(raw);
+    if (raw === "" || !isFinite(x) || x < f.min){ out.append(errBox("Enter a value of " + f.min + " or more for " + f.label.toLowerCase() + ".")); return; }
+    changes[f.id] = x;
+  } else if (f.type === "bool"){
+    changes[f.id] = raw === "true";
+  } else {
+    if (raw === "add") changes.add_amenities = [f.name.toLowerCase()]; else changes.remove_amenities = [f.name.toLowerCase()];
+  }
+  await withBusy(btn, async () => {
+    try {
+      const resp = await API.whatif(listing, changes, f.label);
+      const sc = (resp.scenarios || [])[0] || {};
+      if (sc.error){ setContent(out, errBox(sc.error)); return; }
+      const d = {base_price: resp.base_price, predicted_price: sc.predicted_price, delta: sc.change_usd};
+      const before = pickNum(d, ["base_price","baseline","original_price","before","current_price","base"]);
+      const after = pickNum(d, ["new_price","whatif_price","scenario_price","after","predicted_price","price"]);
+      let delta = pickNum(d, ["delta","difference","change","diff"]);
+      if (delta === undefined && before !== undefined && after !== undefined) delta = after - before;
+      if (after === undefined){ setContent(out, renderKV(d)); return; }
+      setContent(out, h("div", {class:"stats"},
+        h("div", {class:"stat"}, h("div", {class:"k", text:"Before"}), h("div", {class:"v", text: money(before !== undefined ? before : lastPrice)})),
+        h("div", {class:"stat"}, h("div", {class:"k", text:"After"}), h("div", {class:"v", text: money(after)})),
+        delta !== undefined ? h("div", {class:"stat"}, h("div", {class:"k", text:"Change per night"}),
+          h("div", {class:"v " + (delta >= 0 ? "up-t" : "down-t"), text:(delta >= 0 ? "+" : "−") + money(Math.abs(delta))})) : null));
+    } catch (er){ setContent(out, errBox(er.detail || er.message)); }
+  });
+});
+
+/* ---- improvements ---- */
+$("#btn-improve").addEventListener("click", async e => {
+  const btn = e.currentTarget, out = $("#improve-out");
+  clear(out);
+
+  const {listing, errors} = readListing();
+  if (errors.length){ out.append(errList(errors)); return; }
+  await withBusy(btn, async () => {
+    try {
+      const d = await API.improve(listing);
+      const list = asList(d, ["improvements","suggestions","gains","results","items"]);
+      if (!list){ setContent(out, renderKV(d)); return; }
+      if (!list.length){ setContent(out, h("p", {class:"empty", text:"No improvement raises the price for this listing. Nothing left to add: try unchecking an amenity or Superhost first."})); return; }
+      setContent(out, h("ul", {class:"bars", style:"margin-top:14px"}, list.map(it => {
+        if (typeof it === "string") return h("li", {text: it});
+        const label = pickStr(it, ["description","change","name","label","action","feature"]) || "Change";
+        const gain = pickNum(it, ["change_usd","gain","delta","uplift","gain_usd","price_gain","increase"]);
+        const gp = pickNum(it, ["change_percent","gain_pct","pct","uplift_pct","delta_pct"]);
+        return h("li", {class:"bar-row", style:"grid-template-columns:1fr auto"},
+          h("span", {text: pretty(label)}),
+          h("span", {class:"bar-val up-t", text: (gain !== undefined ? "+" + money(gain) : "") + (gp !== undefined ? " (" + (gp >= 0 ? "+" : "") + num1.format(gp) + "%)" : "")}));
+      })));
+    } catch (er){ setContent(out, errBox(er.detail || er.message)); }
+  });
+});
+
+/* ---------------- mispricing ---------------- */
+async function loadMispricing(){
+  const out = $("#mis-out");
+  const q = {limit:"50"};
+  if ($("#mis-city").value) q.city = $("#mis-city").value;
+  if ($("#mis-flag").value) q.flag = $("#mis-flag").value;
+  await withBusy($("#btn-mis"), async () => {
+    setContent(out, h("p", {class:"empty", text:"Loading…"}));
+    try {
+      const d = await API.mispricing(q);
+      loaded.mispricing = true;
+
+      const rows = (asList(d, ["items","results","rows","listings","data"]) || []).slice(0, 50);
+      if (!rows.length){ setContent(out, h("p", {class:"empty", text:"No listings match these filters."})); return; }
+      const head = ["Neighbourhood","Room type","Accommodates","Actual","Predicted","Diff %","Flag"];
+      const nums = new Set([2,3,4,5]);
+      setContent(out, h("div", {class:"table-wrap"}, h("table", null,
+        h("caption", {class:"muted", style:"text-align:left;padding:8px 12px;caption-side:bottom", text:"Showing " + rows.length + " row" + (rows.length === 1 ? "" : "s") + " (limit 50)."}),
+        h("thead", null, h("tr", null, head.map((t, i) => h("th", {scope:"col", class: nums.has(i) ? "num" : "", text:t})))),
+        h("tbody", null, rows.map(r => {
+          const actual = pickNum(r, ["actual_price","actual","price"]);
+          const pred = pickNum(r, ["predicted_price","predicted","prediction"]);
+          let diff = pickNum(r, ["diff_pct","pct_diff","difference_pct","diff_percent"]);
+          if (diff === undefined && actual !== undefined && pred) diff = (actual - pred) / pred * 100;
+          const flag = (pickStr(r, ["flag","status","label"]) || "").toLowerCase();
+          const cls = flag === "underpriced" ? "under" : flag === "overpriced" ? "over" : "";
+          return h("tr", null,
+            h("td", {text: pickStr(r, ["neighbourhood","neighborhood","neighbourhood_cleansed"]) || "–"}),
+            h("td", {text: pickStr(r, ["room_type"]) || "–"}),
+            h("td", {class:"num", text: intf(pickNum(r, ["accommodates"]))}),
+            h("td", {class:"num", text: money(actual)}),
+            h("td", {class:"num", text: money(pred)}),
+            h("td", {class:"num " + (diff === undefined ? "" : diff >= 0 ? "up-t" : "down-t"), text: diff === undefined ? "–" : (diff >= 0 ? "+" : "") + num1.format(diff) + "%"}),
+            h("td", null, h("span", {class:"badge " + cls, text: flag ? flag.charAt(0).toUpperCase() + flag.slice(1) : "–"})));
+        })))));
+    } catch (er){
+      if (er.status === 503) setContent(out, h("p", {class:"empty", text:"Mispricing data is not published on this deployment yet."}));
+      else setContent(out, errBox(er.detail || er.message));
+    }
+  });
+}
+$("#btn-mis").addEventListener("click", loadMispricing);
+$("#mis-city").addEventListener("change", loadMispricing);
+$("#mis-flag").addEventListener("change", loadMispricing);
+
+
+/* ---------------- market ---------------- */
+async function loadMarket(){
+  const out = $("#mkt-out"), noteEl = $("#mkt-note");
+  const city = $("#mkt-city").value;
+  await withBusy($("#btn-mkt"), async () => {
+    setContent(out, h("p", {class:"empty", text:"Loading…"}));
+    clear(noteEl);
+    try {
+      const d = await API.market(city ? {city} : null);
+      loaded.market = true;
+      const note = d && !Array.isArray(d) ? pickStr(d, ["note","disclaimer"]) : undefined;
+      setContent(noteEl, h("div", {class:"msg info", role:"note", text: note || "These figures are estimates, not guarantees."}));
+      let rows = asList(d, ["items","neighbourhoods","neighborhoods","results","rows","data"]) || [];
+      if (city && rows.some(r => r && r.city)) rows = rows.filter(r => String(r.city).toLowerCase() === city.toLowerCase());
+      if (!rows.length){ setContent(out, h("p", {class:"empty", text:"No market data matches this filter."})); return; }
+      const hasCity = rows.some(r => r && r.city);
+      const head = (hasCity ? ["City"] : []).concat(["Neighbourhood","Listings","Median price","Median occupancy (days)","Median annual revenue","% underpriced"]);
+      setContent(out, h("div", {class:"table-wrap"}, h("table", null,
+        h("thead", null, h("tr", null, head.map((t, i) => h("th", {scope:"col", class: i >= (hasCity ? 2 : 1) ? "num" : "", text:t})))),
+        h("tbody", null, rows.map(r => h("tr", null,
+          hasCity ? h("td", {text: pickStr(r, ["city"]) || "–"}) : null,
+          h("td", {text: pickStr(r, ["neighbourhood_cleansed","neighbourhood","neighborhood","name"]) || "–"}),
+          h("td", {class:"num", text: intf(pickNum(r, ["n_listings","listings","listing_count","count"]))}),
+          h("td", {class:"num", text: money(pickNum(r, ["median_predicted_price","median_actual_price","median_price","price_median"]))}),
+          h("td", {class:"num", text: intf(pickNum(r, ["median_occupancy_days","median_occupancy","occupancy_days"]))}),
+          h("td", {class:"num", text: money(pickNum(r, ["median_annual_revenue","median_revenue","annual_revenue"]))}),
+          h("td", {class:"num", text: pct((() => { let u = pickNum(r, ["pct_underpriced","percent_underpriced","underpriced_pct"]); if (u === undefined){ const s = pickNum(r, ["share_underpriced"]); if (s !== undefined) u = s * 100; } return u; })())})
+        ))))));
+    } catch (er){
+      if (er.status === 503) setContent(out, h("p", {class:"empty", text:"Market data is not published on this deployment yet."}));
+      else setContent(out, errBox(er.detail || er.message));
+
+    }
+  });
+}
+$("#btn-mkt").addEventListener("click", loadMarket);
+$("#mkt-city").addEventListener("change", loadMarket);
+
+/* ---------------- seasonality ---------------- */
+async function loadSeasonality(){
+  const out = $("#sea-out"), noteEl = $("#sea-note");
+  setContent(out, h("p", {class:"empty", text:"Loading…"}));
+  try {
+    const d = await API.seasonality();
+    loaded.seasonality = true;
+    const note = d && !Array.isArray(d) ? pickStr(d, ["note","disclaimer"]) : undefined;
+    if (note) setContent(noteEl, h("div", {class:"msg info", role:"note", text: note}));
+    const rows = asList(d, ["rows","items","data"]) || [];
+    if (!rows.length){ setContent(out, h("p", {class:"empty", text:"No seasonality data on this deployment yet."})); return; }
+    const cities = [...new Set(rows.map(r => r.city))];
+    const val = {};
+    let mn = 1, mx = 0;
+    rows.forEach(r => {
+      const s = pickNum(r, ["mean_share_available","share_available"]);
+      if (s === undefined) return;
+      val[r.city + "|" + r.month] = s;
+      if (s < mn) mn = s; if (s > mx) mx = s;
+    });
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const cell = c => {
+      const td = h("td", {class:"num"});
+      if (c === undefined){ td.textContent = "–"; return td; }
+      const t = mx > mn ? (c - mn) / (mx - mn) : 0;
+      td.style.background = "rgba(15,157,148," + (0.06 + 0.5 * (1 - t)).toFixed(3) + ")";
+      td.textContent = num1.format(c * 100) + "%";
+      return td;
+    };
+    setContent(out, h("div", {class:"table-wrap"}, h("table", null,
+      h("caption", {class:"muted", style:"text-align:left;padding:8px 12px;caption-side:bottom", text:"Darker teal = lower availability (busier). Source: Inside Airbnb calendar snapshot."}),
+      h("thead", null, h("tr", null, [h("th", {scope:"col", text:"Month"})].concat(cities.map(c => h("th", {scope:"col", class:"num", text:c}))))),
+      h("tbody", null, MONTHS.map((mname, i) => h("tr", null,
+        [h("td", {text: mname})].concat(cities.map(c => cell(val[c + "|" + (i + 1)]))))))
+    )));
+  } catch (er){
+    if (er.status === 503) setContent(out, h("p", {class:"empty", text:"Seasonality data is not published on this deployment yet."}));
+    else setContent(out, errBox(er.detail || er.message));
+  }
+}
+
+/* ---------------- natural-language fill ---------------- */
+$("#btn-parse").addEventListener("click", async () => {
+  const out = $("#nl-out"), text = $("#nl-text").value.trim();
+  if (!text){ setContent(out, h("p", {class:"empty", text:"Type a description first."})); return; }
+  await withBusy($("#btn-parse"), async () => {
+    try {
+      const d = await API.parseListing(text);
+      const l = (d && d.listing) || d;
+      fillListingForm(l);
+      setContent(out, h("div", {class:"msg info", role:"status", text:"Form filled from the description. Check the values, then estimate."}));
+    } catch (er){
+      if (er.status === 503) setContent(out, h("p", {class:"empty", text:"This feature is disabled on this deployment (no API key configured)."}));
+      else setContent(out, errBox(er.detail || er.message));
+    }
+  });
+});
+function fillListingForm(l){
+  if (!l || typeof l !== "object") return;
+  if (l.city && CITY_CENTER[l.city]){ form.elements.city.value = l.city; form.elements.city.dispatchEvent(new Event("change")); }
+  if (isFinite(l.latitude) && isFinite(l.longitude)){ setPoint(Number(l.latitude), Number(l.longitude)); }
+  if (l.room_type) form.elements.room_type.value = l.room_type;
+  if (l.property_type) form.elements.property_type.value = l.property_type;
+  [["accommodates"],["bedrooms"],["beds"],["bathrooms"],["availability_30"],["number_of_reviews"],["reviews_per_month"],["review_scores_rating"]].forEach(([n]) => {
+    if (l[n] !== undefined && l[n] !== null && form.elements[n]) form.elements[n].value = l[n];
+  });
+  if (Array.isArray(l.amenities)){
+    const wanted = new Set(l.amenities.map(a => String(a).toLowerCase()));
+    $$('input[name="amenity"]', form).forEach(c => { c.checked = wanted.has(c.value.toLowerCase()); });
+  }
+  if (l.host_is_superhost !== undefined) form.elements.host_is_superhost.checked = !!l.host_is_superhost;
+  if (l.host_identity_verified !== undefined) form.elements.host_identity_verified.checked = !!l.host_identity_verified;
+}
+
+/* ---------------- invest ---------------- */
+$("#invest-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const out = $("#inv-out");
+  clear(out);
+  const btn = e.submitter || $("#invest-form button[type=submit]");
+  const {listing, errors} = readListing();
+  const price = $("#inv-price").value.trim(), costs = $("#inv-costs").value.trim(), occ = $("#inv-occ").value.trim();
+  if (price === "" || !(Number(price) > 0)) errors.push("Purchase price must be greater than 0.");
+  if (costs === "" || !(Number(costs) >= 0)) errors.push("Annual costs must be 0 or more.");
+  if (occ !== "" && !(Number(occ) >= 0 && Number(occ) <= 365)) errors.push("Occupancy override must be between 0 and 365 days.");
+  if (errors.length){ out.append(errList(errors)); return; }
+  const body = {...listing, purchase_price_usd: Number(price), annual_costs_usd: Number(costs)};
+  if (occ !== "") body.occupancy_days = Number(occ);
+  await withBusy(btn, async () => {
+    try {
+      const d = await API.invest(body);
+      const stat = (k, v, s) => h("div", {class:"stat"}, h("div", {class:"k", text:k}), h("div", {class:"v", text:v}), s ? h("div", {class:"s", text:s}) : null);
+      const assumptions = asList(d, ["assumptions"]) || [];
+      const src = pickStr(d, ["occupancy_source","occupancy_days_source","source"]);
+      setContent(out, h("h3", {style:"margin-top:18px", text:"Result"}),
+        h("div", {class:"stats"},
+          stat("Predicted nightly price", money(pickNum(d, PRICE_KEYS))),
+          stat("Occupancy days", intf(pickNum(d, ["occupancy_days","occupancy"])), src ? "Source: " + src : null),
+          stat("Expected annual revenue", money(pickNum(d, ["annual_revenue_usd","expected_annual_revenue","annual_revenue","gross_revenue"]))),
+          stat("Gross yield", pct(pickNum(d, ["gross_yield_pct","gross_yield"]))),
+
+          stat("Net revenue", money(pickNum(d, ["net_revenue_usd","net_revenue","net_annual_revenue"]))),
+          stat("Net yield", pct(pickNum(d, ["net_yield_pct","net_yield"])))),
+        assumptions.length ? h("div", {style:"margin-top:16px"}, h("h3", {text:"Assumptions"}),
+          h("ul", {class:"plain"}, assumptions.map(a => h("li", {text: typeof a === "string" ? a : JSON.stringify(a)})))) : null);
+    } catch (er){ setContent(out, errBox(er.detail || er.message)); }
+  });
+});
+
+/* ---------------- advisor ---------------- */
+const chat = $("#chat");
+function addBubble(kind, text){
+  const b = h("div", {class:"bubble " + kind, text});
+  chat.append(b);
+  chat.scrollTop = chat.scrollHeight;
+  return b;
+}
+async function sendAdvisor(){
+  const q = $("#adv-q").value.trim();
+  const {listing, errors} = readListing();
+  if (errors.length){ addBubble("err", "Complete the listing first: " + errors.join(" ")); return; }
+  if (!q){ addBubble("err", "Type a question first."); return; }
+  addBubble("user", q);
+  $("#adv-q").value = "";
+  await withBusy($("#btn-adv"), async () => {
+    try {
+      const d = await API.advisor(q, listing);
+      const answer = typeof d === "string" ? d : pickStr(d, ["answer","reply","response","message","text"]);
+      addBubble("bot", answer || "The advisor returned an empty answer.");
+    } catch (er){
+      if (er.status === 503) addBubble("err", "The advisor is disabled on this deployment (no API key configured).");
+      else addBubble("err", er.detail || er.message);
+    }
+
+  });
+}
+$("#advisor-form").addEventListener("submit", e => { e.preventDefault(); sendAdvisor(); });
+$("#adv-q").addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); sendAdvisor(); }
+});
+
+/* ---------------- init ---------------- */
+initMap();
+showTab(location.hash.slice(1) || "estimator");
+})();
+</script>
+</body>
+</html>
