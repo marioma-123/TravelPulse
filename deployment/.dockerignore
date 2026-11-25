@@ -1,3 +1,10 @@
 .venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+tests/
+export/
+README.md
+.env
+models/dummy/
+models/parity_sample.csv
