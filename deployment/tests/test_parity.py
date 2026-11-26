@@ -1,8 +1,11 @@
 """اختبار التطابق مع الـ notebook (الأهم): نفس المدخلات لازم تدي نفس الأعمدة ونفس السعر.
 
 بيشتغل بس لما ملف models/parity_sample.csv (من خلية التصدير) يكون موجود.
+ده اختبار موديل الـ baseline الأصلي، عشان كده بنثبّت الوضع على baseline هنا؛
+اختبار الخليط في test_blend.py.
 """
 import json
+import os
 
 import numpy as np
 import pandas as pd
@@ -45,6 +48,7 @@ def to_payload(raw_row, reference_date):
 
 @pytest.fixture(scope="module")
 def bundle():
+    os.environ["MODEL_MODE"] = "baseline"  # التثبيت جوه الـ fixture: ترتيب استيراد الملفات ما يأثرش
     return load_bundle(get_model_dir())
 
 
