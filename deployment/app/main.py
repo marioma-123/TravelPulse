@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 
 from .config import get_model_dir
@@ -11,20 +11,9 @@ from .model_loader import PredictionOutOfRange, load_bundle, predict_price
 from .explain import explain_price
 import numpy as np
 
-from .advisor import AdvisorError, ask_advisor, get_api_key
-from .data_files import DataUnavailable
 from .interval import level_key, price_interval
-from .invest import run_investment
-from .market import NOTE as MARKET_NOTE
-from .market import query_market
-from .mispricing import query_mispriced
-from .parse_listing import parse_listing_text
-from .seasonality import get_seasonality
-from .schemas import (AdvisorRequest, AdvisorResponse, City, ExplanationOutput, FlagFilter,
-                      HealthOutput, ImproveOutput, InvestRequest, InvestResponse,
-                      ListingInput, MarketResponse, MispricingResponse, ParseListingRequest,
-                      ParseListingResponse, PredictionOutput, RangeOutput,
-                      SeasonalityResponse, WhatIfOutput, WhatIfRequest)
+from .schemas import (ExplanationOutput, HealthOutput, ImproveOutput, ListingInput,
+                      PredictionOutput, RangeOutput, WhatIfOutput, WhatIfRequest)
 from .whatif import run_scenarios, suggest_improvements
 
 
@@ -35,15 +24,16 @@ async def lifespan(app: FastAPI):
     yield
 
 
-
-app = FastAPI(title="TravelPulse API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="TravelPulse API", version="0.3.0", lifespan=lifespan)
 
 
 @app.get("/health", response_model=HealthOutput)
 def health(request: Request):
+    bundle = getattr(request.app.state, "bundle", None)
     return HealthOutput(
         status="ok",
-        model_loaded=getattr(request.app.state, "bundle", None) is not None,
+        model_loaded=bundle is not None,
+        model=bundle.mode if bundle is not None else "none",
     )
 
 
@@ -64,7 +54,6 @@ def explain(listing: ListingInput, request: Request):
     except PredictionOutOfRange as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return ExplanationOutput(city=listing.city, **result)
-
 
 
 @app.post("/predict-range", response_model=RangeOutput)
@@ -99,96 +88,9 @@ def whatif(req: WhatIfRequest, request: Request):
 def improve(listing: ListingInput, request: Request):
     """بيجرّب تحسينات جاهزة (مرفق ناقص، Superhost...) ويرتّبها حسب أكبر زيادة متوقعة."""
     try:
-
         return suggest_improvements(request.app.state.bundle, listing.model_dump())
     except PredictionOutOfRange as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-
-
-@app.get("/mispricing", response_model=MispricingResponse)
-def mispricing(
-    request: Request,
-    city: City | None = None,
-    flag: FlagFilter | None = None,
-    limit: int = Query(20, ge=1, le=100),
-):
-    """الوحدات اللي سعرها بعيد عن توقّع الموديل، مرتبة من الأرخص نسبياً للأغلى."""
-    try:
-        rows = query_mispriced(request.app.state, city, flag, limit)
-    except DataUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
-    return {"count": len(rows), "listings": rows}
-
-
-@app.get("/market", response_model=MarketResponse)
-def market(request: Request, city: City | None = None):
-    """ملخص السوق لكل حي (واختياري لمدينة واحدة)، من market_summary.csv."""
-    try:
-        rows = query_market(request.app.state, city)
-    except DataUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
-    return {"count": len(rows), "rows": rows, "note": MARKET_NOTE}
-
-
-@app.post("/invest", response_model=InvestResponse)
-def invest(req: InvestRequest, request: Request):
-
-    """العائد الإجمالي والصافي من السعر المتوقع وافتراض الإشغال، وكل الافتراضات مكتوبة."""
-    listing = req.model_dump(
-        exclude={"purchase_price_usd", "annual_costs_usd", "occupancy_days"}
-    )
-    try:
-        return run_investment(
-            request.app.state,
-            listing,
-            req.city,
-            req.purchase_price_usd,
-            req.annual_costs_usd,
-            req.occupancy_days,
-        )
-    except PredictionOutOfRange as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    except DataUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
-
-
-@app.post("/advisor", response_model=AdvisorResponse)
-def advisor(req: AdvisorRequest, request: Request):
-    """إجابة بلغة بسيطة من Gemini، ومقيّدة بأرقام الموديل بس."""
-    api_key = get_api_key()
-    if api_key is None:
-        raise HTTPException(
-            status_code=503, detail="Advisor is disabled: GEMINI_API_KEY is not set"
-        )
-    try:
-        return ask_advisor(
-            api_key, request.app.state.bundle, req.listing.model_dump(), req.question
-        )
-    except PredictionOutOfRange as exc:
-
-        raise HTTPException(status_code=422, detail=str(exc))
-    except AdvisorError as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
-
-
-@app.get("/seasonality", response_model=SeasonalityResponse)
-def seasonality(request: Request, city: City | None = None):
-    """متوسط نسبة الإتاحة لكل مدينة وشهر (proxy للإتاحة، مش طلب مقيس)."""
-    try:
-        return get_seasonality(request.app.state, city)
-    except DataUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
-
-
-@app.post("/parse-listing", response_model=ParseListingResponse)
-def parse_listing_endpoint(req: ParseListingRequest):
-    """بيحوّل وصف حر لـ ListingInput مُتحقق منه عن طريق Gemini (503 لو مفيش مفتاح)."""
-    try:
-        return parse_listing_text(req.text)
-    except AdvisorError as exc:
-        msg = str(exc)
-        status = 503 if "GEMINI_API_KEY" in msg else 502
-        raise HTTPException(status_code=status, detail=msg)
 
 
 # الواجهة (نفس الـ origin، فمفيش CORS): http://localhost:8000/ui/

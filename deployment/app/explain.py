@@ -5,6 +5,7 @@ log(السعر)، فكل مساهمة بتتجمع في الـ log، وبالت�
 exp(المساهمة). عشان كده بنعرض الأثر كنسبة مئوية: (exp(c) - 1) * 100.
 """
 import numpy as np
+import pandas as pd
 import xgboost as xgb
 
 from .features import build_feature_row
@@ -42,9 +43,31 @@ def percent_effect(contribution: float) -> float:
     return float((np.exp(contribution) - 1.0) * 100.0)
 
 
+def _blend_shap(bundle: ModelBundle, features: pd.DataFrame):
+    """SHAP للخليط: مساهمات كل موديل بتتجمع في الـ log، فالمتوسط الموزون للمساهمات
+    هو مساهمة الخليط بالظبط (نفس أوزان التنبؤ)."""
+    blend = bundle.blend
+    columns = list(features.columns)
+    row = features.iloc[0].to_numpy(dtype=float).reshape(1, -1)
+
+    raw_xgb = blend.xgb_booster.predict(xgb.DMatrix(row, feature_names=columns), pred_contribs=True)[0]
+    phi_l, b_l = blend.lgbm_booster.shap_row(row)
+    phi_c, b_c = blend.cat_model.shap_row(row)
+    raw_lgbm = np.append(phi_l, b_l)
+    raw_cat = np.append(phi_c, b_c)
+
+    w = blend.weights
+    contribs = w["xgb"] * raw_xgb[:-1] + w["lgbm"] * raw_lgbm[:-1] + w["cat"] * raw_cat[:-1]
+    bias = w["xgb"] * float(raw_xgb[-1]) + w["lgbm"] * float(raw_lgbm[-1]) + w["cat"] * float(raw_cat[-1])
+    return contribs, float(bias)
+
+
 def shap_contributions(bundle: ModelBundle, listing: dict):
     """بيرجّع (الصف، المساهمات لكل عمود، القيمة الأساسية). المجموع = توقع الـ log بالظبط."""
     features = build_feature_row(listing, bundle.artifacts, bundle.landmarks)
+    if bundle.blend is not None:
+        contribs, bias = _blend_shap(bundle, features)
+        return features, contribs, bias
     raw = bundle.booster.predict(xgb.DMatrix(features), pred_contribs=True)[0]
     return features, raw[:-1], float(raw[-1])
 

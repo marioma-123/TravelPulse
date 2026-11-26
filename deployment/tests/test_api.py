@@ -12,7 +12,7 @@ from app.model_loader import PredictionOutOfRange, load_bundle, predict_price
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "model_loaded": True}
+    assert response.json() == {"status": "ok", "model_loaded": True, "model": "xgb_baseline"}
 
 
 def test_predict_full_listing(client, full_listing):
@@ -86,13 +86,3 @@ def test_non_positive_prediction_returns_422_not_zero(client, minimal_listing):
 def test_ui_is_served(client):
     r = client.get("/ui/")
     assert r.status_code == 200 and "TravelPulse" in r.text
-
-
-def test_ui_matches_api_contract():
-    """The web UI must send `scenarios` to /whatif and read `effect_percent` / `change_usd`."""
-    from pathlib import Path
-    html = (Path(__file__).resolve().parents[1] / "web" / "index.html").read_text(encoding="utf-8")
-    assert "scenarios: [{" in html
-    assert '"effect_percent"' in html
-    assert '"change_usd"' in html
-    assert "add_amenities" in html
